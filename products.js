@@ -44,6 +44,6 @@ async function get(id) {
 }
 
 module.exports = {
-  list,
-  get
+list,
+get
 }
