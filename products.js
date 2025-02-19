@@ -108,9 +108,15 @@ async function destroy(_id) {
 }
 
 module.exports = {
+
+list,
+get
+}
+
   list,
   get,
   create,
   edit,
   destroy,
 };
+
