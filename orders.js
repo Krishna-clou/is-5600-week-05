@@ -6,7 +6,11 @@ const Order = db.model('Order', {
   buyerEmail: { type: String, required: true },
   products: [{
     type: String,
+
     ref: 'Product',
+
+    ref: 'Product', // Automatically fetch associated products
+
     index: true,
     required: true
   }],
@@ -27,6 +31,7 @@ async function list(options = {}) {
   const { offset = 0, limit = 25, productId, status } = options;
 
   const productQuery = productId ? { products: productId } : {};
+
   const statusQuery = status ? { status: status } : {};
 
   const query = {
@@ -40,6 +45,13 @@ async function list(options = {}) {
     .limit(limit);
 
   return orders;
+
+  const statusQuery = status ? { status } : {};
+
+  const query = { ...productQuery, ...statusQuery };
+
+  return await Order.find(query).sort({ _id: 1 }).skip(offset).limit(limit);
+
 }
 
 /**
@@ -48,11 +60,17 @@ async function list(options = {}) {
  * @returns {Promise<Object>}
  */
 async function get(_id) {
+
   const order = await Order.findById(_id)
     .populate('products')
     .exec();
 
   return order;
+
+  if (!_id) throw new Error("Order ID is required");
+  
+  return await Order.findById(_id).populate('products').exec();
+
 }
 
 /**
@@ -66,8 +84,47 @@ async function create(fields) {
   return order;
 }
 
+
 module.exports = {
   list,
   create,
   get
+
+/**
+ * Edit an order
+ * @param {String} _id
+ * @param {Object} change
+ * @returns {Promise<Object>}
+ */
+async function edit(_id, change) {
+  if (!_id) throw new Error("Order ID is required");
+
+  const order = await get(_id);
+  if (!order) throw new Error("Order not found");
+
+  Object.assign(order, change);
+  await order.save();
+
+  return order.populate('products');
+}
+
+/**
+ * Delete an order
+ * @param {String} _id
+ * @returns {Promise<void>}
+ */
+async function destroy(_id) {
+  if (!_id) throw new Error("Order ID is required");
+
+  const result = await Order.deleteOne({ _id });
+  if (result.deletedCount === 0) throw new Error("Order not found");
+}
+
+module.exports = {
+  create,
+  get,
+  list,
+  edit,
+  destroy
+
 };
